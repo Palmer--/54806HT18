@@ -24,4 +24,5 @@ model = sipa.getConvModel()
 
 history = model.fit(train_data, train_labels, epochs=10,
           shuffle=True, validation_split=0.2)
+
 (loss, acc) = model.evaluate(test_data, test_labels)
