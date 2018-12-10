@@ -1,9 +1,7 @@
 import tensorflow as tf
 import keras
 import sipaModels as sipa
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+import historyPlot as hisp
 
 def preProccess(data):
     return data/255

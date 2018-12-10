@@ -1,9 +1,10 @@
 import keras
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
-def plotAccuracyHistory(history: keras.models):
+def plotAccuracyHistory(history: [keras.models], legend: [str]):
     plt.figure()
-    plt.plot(history.history['acc'])
+    for x in history:
+        plt.plot(x.history['acc'])
     plt.title('model accuracy')
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
