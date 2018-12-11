@@ -8,7 +8,7 @@ def plotAccuracyHistory(history: [keras.models], legend: [str]):
     plt.title('model accuracy')
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
-    plt.legend(['Accuracy'], loc='top right')
+    plt.legend(legend, loc='best')
     plt.show()
 
 def plotLossHistory(history):
@@ -17,6 +17,6 @@ def plotLossHistory(history):
     plt.title('model Loss')
     plt.ylabel('Loss')
     plt.xlabel('epoch')
-    plt.legend(['Loss'], loc='top right')
+    plt.legend(['Loss'], loc='best')
     plt.show()
 

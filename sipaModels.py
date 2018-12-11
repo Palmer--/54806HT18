@@ -6,6 +6,7 @@ def defaultCompile(model):
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
 
+
 def getTutorialModel():
     model = keras.Sequential([
         keras.layers.Flatten(input_shape=(28, 28)),
@@ -14,6 +15,7 @@ def getTutorialModel():
         ])
     defaultCompile(model)
     return model
+
 
 def getTutorialModelMultiLayer():
     model = keras.Sequential([
@@ -29,6 +31,7 @@ def getTutorialModelMultiLayer():
     defaultCompile(model)
     return model
 
+
 def getConvModel():
     model = keras.models.Sequential([
         keras.layers.Conv2D(32, (5, 5), padding="same", input_shape=([28, 28, 1])),
@@ -41,6 +44,49 @@ def getConvModel():
         keras.layers.Dense(10, activation='softmax')])
     defaultCompile(model)
     return model
+
+
+def getConvModelSmallKernel():
+    model = keras.models.Sequential([
+        keras.layers.Conv2D(32, (2, 2), padding="same", input_shape=([28, 28, 1])),
+        keras.layers.MaxPool2D((2, 2)),
+        keras.layers.Conv2D(64, (12, 12), padding="same"),
+        keras.layers.MaxPool2D((2, 2)),
+        keras.layers.Flatten(),
+        keras.layers.Dense(1024, activation='relu'),
+        keras.layers.Dropout(0.5),
+        keras.layers.Dense(10, activation='softmax')])
+    defaultCompile(model)
+    return model
+
+
+def getConvModelBigKernel():
+    model = keras.models.Sequential([
+        keras.layers.Conv2D(32, (14, 14), padding="same", input_shape=([28, 28, 1])),
+        keras.layers.MaxPool2D((2, 2)),
+        keras.layers.Conv2D(64, (2, 2), padding="same"),
+        keras.layers.MaxPool2D((2, 2)),
+        keras.layers.Flatten(),
+        keras.layers.Dense(1024, activation='relu'),
+        keras.layers.Dropout(0.5),
+        keras.layers.Dense(10, activation='softmax')])
+    defaultCompile(model)
+    return model
+
+def getConvModelBigStrides():
+    model = keras.models.Sequential([
+        keras.layers.Conv2D(32, (14, 14), padding="same", input_shape=([28, 28, 1])),
+        keras.layers.MaxPool2D((4, 4)),
+        keras.layers.Conv2D(64, (2, 2), padding="same"),
+        keras.layers.MaxPool2D((4, 4)),
+        keras.layers.Flatten(),
+        keras.layers.Dense(1024, activation='relu'),
+        keras.layers.Dropout(0.5),
+        keras.layers.Dense(10, activation='softmax')])
+    defaultCompile(model)
+    return model
+
+
 
 def getConvModelMultiLayer():
     model = keras.models.Sequential([
