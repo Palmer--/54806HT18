@@ -9,6 +9,7 @@ conv_test = sipa.getConvTestData()
 train_labels = sipa.getTrainLabels()
 test_labels = sipa.getTestLabels()
 
+
 def evaluateModel(model, epocs, name):
     testAccuracy = []
     testLoss = []
