@@ -1,10 +1,37 @@
 import keras
 import tensorflow as tf
 
+fashion_mnist = keras.datasets.fashion_mnist
+(train_data_raw, train_labels), (test_data_raw, test_labels) = fashion_mnist.load_data()
+
 def defaultCompile(model):
     model.compile(optimizer=tf.train.AdamOptimizer(),
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
+
+
+def preProccess(data):
+    return data / 255
+
+
+def preProccessCovData(data):
+    return data.reshape(-1, 28, 28, 1) / 255
+
+
+def getConvTrainData():
+    return preProccessCovData(train_data_raw)
+
+
+def getConvTestData():
+    return preProccessCovData(test_data_raw)
+
+
+def getTrainLabels():
+    return train_labels
+
+
+def getTestLabels():
+    return test_labels
 
 
 def getTutorialModel():

@@ -22,13 +22,13 @@ def plotLossHistory(history):
     plt.show()
 
 
-def plot(history, legend: [str]):
+def savePlot(plots, title, ylabel, legend):
     plt.figure()
-    for line in history:
+    for line in plots:
         plt.plot(line)
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
+    plt.title(title)
+    plt.ylabel(ylabel)
     plt.xlabel('epoch')
     plt.legend(legend, loc='best')
-    plt.show()
-
+    plt.savefig(title)
+    plt.close()
