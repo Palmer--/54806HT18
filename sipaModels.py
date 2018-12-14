@@ -59,7 +59,7 @@ def getTutorialModelMultiLayer():
     return model
 
 
-def getConvModel():
+def getBaseModel():
     model = keras.models.Sequential([
         keras.layers.Conv2D(32, (5, 5), padding="same", input_shape=([28, 28, 1])),
         keras.layers.MaxPool2D((2, 2)),
@@ -127,7 +127,6 @@ def getConvModelBigStrides():
     return model
 
 
-
 def getConvModelMultiLayer():
     model = keras.models.Sequential([
         keras.layers.Conv2D(32, (5, 5), padding="same", input_shape=([28, 28, 1])),
@@ -145,3 +144,14 @@ def getConvModelMultiLayer():
     defaultCompile(model)
     return model
 
+def getConvModelNoDropout():
+    model = keras.models.Sequential([
+        keras.layers.Conv2D(32, (5, 5), padding="same", input_shape=([28, 28, 1])),
+        keras.layers.MaxPool2D((2, 2)),
+        keras.layers.Conv2D(64, (5, 5), padding="same"),
+        keras.layers.MaxPool2D((2, 2)),
+        keras.layers.Flatten(),
+        keras.layers.Dense(1024, activation='relu'),
+        keras.layers.Dense(10, activation='softmax')])
+    defaultCompile(model)
+    return model
