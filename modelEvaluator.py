@@ -46,7 +46,7 @@ def writeResultsToFile(modelName, testAccuracy, testLoss, trainAccuracy, trainLo
     maxTrainAccIndex = np.where(trainAccuracy == maxTrainAccValue)[0][0]
     minTrainLossValue = min(trainLoss)
     minTrainLossIndex = np.where(trainLoss == minTrainLossValue)[0][0]
-    with open("Results.txt", "a") as file:
+    with open("Results " + modelName + ".txt", "a") as file:
         file.write("##%s###\n" % modelName)
         file.write("Created at %s\n" % dt.datetime.now())
         file.write("Highest Test Accuracy: %s at epoch: %s\n" % (maxTestAccValue, maxTestAccIndex))
