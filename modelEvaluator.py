@@ -19,10 +19,10 @@ def evaluateModel(model, epocs, name):
 
     for epo in range(epocs):
         history = model.fit(conv_train, train_labels, epochs=1, shuffle=True, validation_split=0.2)
-        trainAcc = history.history["val_acc"]
-        trainAccuracy.append(trainAcc)
-        trainLoss = history.history["val_loss"]
-        trainLoss.append(trainLoss)
+        trainAccVal = history.history["val_acc"]
+        trainAccuracy.append(trainAccVal)
+        trainLossVal = history.history["val_loss"]
+        trainLoss.append(trainLossVal)
         loss, acc = model.evaluate(conv_test, test_labels)
         testAccuracy.append(acc)
         testLoss.append(loss)
@@ -31,9 +31,9 @@ def evaluateModel(model, epocs, name):
     testLoss = np.asanyarray(testLoss)
     trainAccuracy = np.asanyarray(trainAccuracy)
     trainLoss = np.asanyarray(trainLoss)
-    siplot.savePlot([trainAccuracy, testAccuracy], name + " accuracy", "accuracy", ["Train", "Test"])
-    siplot.savePlot([trainLoss, testLoss], name + " loss", "loss", ["Train", "Test"])
-
+    siplot.savePlot([trainAccuracy, testAccuracy], name + " accuracy", "accuracy", ["Train data", "Test data"])
+    siplot.savePlot([trainLoss, testLoss], name + " loss", "loss", ["Train data", "Test data"])
+    writeResultsToFile(name, testAccuracy, testLoss, trainAccuracy, trainLoss)
 
 
 def writeResultsToFile(modelName, testAccuracy, testLoss, trainAccuracy, trainLoss):
