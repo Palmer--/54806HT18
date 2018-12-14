@@ -100,12 +100,25 @@ def getConvModelBigKernel():
     defaultCompile(model)
     return model
 
-def getConvModelBigStrides():
+def getConvModelValidPadding():
     model = keras.models.Sequential([
         keras.layers.Conv2D(32, (14, 14), padding="same", input_shape=([28, 28, 1])),
-        keras.layers.MaxPool2D((4, 4)),
+        keras.layers.MaxPool2D((2, 2)),
         keras.layers.Conv2D(64, (2, 2), padding="same"),
-        keras.layers.MaxPool2D((4, 4)),
+        keras.layers.MaxPool2D((2, 2)),
+        keras.layers.Flatten(),
+        keras.layers.Dense(1024, activation='relu'),
+        keras.layers.Dropout(0.5),
+        keras.layers.Dense(10, activation='softmax')])
+    defaultCompile(model)
+    return model
+
+def getConvModelBigStrides():
+    model = keras.models.Sequential([
+        keras.layers.Conv2D(32, (5, 5), strides=2, padding="same", input_shape=([28, 28, 1])),
+        keras.layers.MaxPool2D((2, 2)),
+        keras.layers.Conv2D(64, (5, 5), padding="same"),
+        keras.layers.MaxPool2D((2, 2)),
         keras.layers.Flatten(),
         keras.layers.Dense(1024, activation='relu'),
         keras.layers.Dropout(0.5),
