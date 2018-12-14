@@ -3,6 +3,7 @@ import keras
 import  matplotlib.pyplot as plt
 import historyPlot as siplot
 import numpy as np
+import datetime as dt
 
 conv_train = sipa.getConvTrainData()
 conv_test = sipa.getConvTestData()
@@ -18,8 +19,10 @@ def evaluateModel(model, epocs, name):
 
     for epo in range(epocs):
         history = model.fit(conv_train, train_labels, epochs=1, shuffle=True, validation_split=0.2)
-        trainAccuracy.append(history.history["val_acc"])
-        trainLoss.append((history.history["val_loss"]))
+        trainAcc = history.history["val_acc"]
+        trainAccuracy.append(trainAcc)
+        trainLoss = history.history["val_loss"]
+        trainLoss.append(trainLoss)
         loss, acc = model.evaluate(conv_test, test_labels)
         testAccuracy.append(acc)
         testLoss.append(loss)
@@ -30,3 +33,25 @@ def evaluateModel(model, epocs, name):
     trainLoss = np.asanyarray(trainLoss)
     siplot.savePlot([trainAccuracy, testAccuracy], name + " accuracy", "accuracy", ["Train", "Test"])
     siplot.savePlot([trainLoss, testLoss], name + " loss", "loss", ["Train", "Test"])
+
+
+
+def writeResultsToFile(modelName, testAccuracy, testLoss, trainAccuracy, trainLoss):
+    maxTestAccValue = max(testAccuracy)
+    maxTestAccIndex = np.where(testAccuracy == maxTestAccValue)[0][0]
+    minTestLossValue = min(testLoss)
+    minTestLossIndex = np.where(testLoss == minTestLossValue)[0][0]
+
+    maxTrainAccValue = max(trainAccuracy)
+    maxTrainAccIndex = np.where(trainAccuracy == maxTrainAccValue)[0][0]
+    minTrainLossValue = min(trainLoss)
+    minTrainLossIndex = np.where(trainLoss == minTrainLossValue)[0][0]
+    with open("Results.txt", "a") as file:
+        file.write("##%s###\n" % modelName)
+        file.write("Created at %s\n" % dt.datetime.now())
+        file.write("Highest Test Accuracy: %s at epoch: %s\n" % (maxTestAccValue, maxTestAccIndex))
+        file.write("Lowest Test Loss: %s at epoch: %s\n" % (minTestLossValue, minTestLossIndex))
+        file.write("Highest Train Accuracy: %s at epoch: %s\n" % (maxTrainAccValue, maxTrainAccIndex))
+        file.write("Lowest Train Loss: %s at epoch: %s\n" % (minTrainLossValue, minTrainLossIndex))
+
+
