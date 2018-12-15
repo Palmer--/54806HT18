@@ -9,6 +9,8 @@ def defaultCompile(model):
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
 
+def getRawTrainData():
+    return train_data_raw
 
 def preProccess(data):
     return data / 255
