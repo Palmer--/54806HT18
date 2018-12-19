@@ -79,7 +79,7 @@ def getConvModelSmallKernel():
     model = keras.models.Sequential([
         keras.layers.Conv2D(32, (2, 2), padding="same", input_shape=([28, 28, 1])),
         keras.layers.MaxPool2D((2, 2)),
-        keras.layers.Conv2D(64, (12, 12), padding="same"),
+        keras.layers.Conv2D(64, (2, 2), padding="same"),
         keras.layers.MaxPool2D((2, 2)),
         keras.layers.Flatten(),
         keras.layers.Dense(1024, activation='relu'),
@@ -93,7 +93,7 @@ def getConvModelBigKernel():
     model = keras.models.Sequential([
         keras.layers.Conv2D(32, (14, 14), padding="same", input_shape=([28, 28, 1])),
         keras.layers.MaxPool2D((2, 2)),
-        keras.layers.Conv2D(64, (2, 2), padding="same"),
+        keras.layers.Conv2D(64, (7, 7), padding="same"),
         keras.layers.MaxPool2D((2, 2)),
         keras.layers.Flatten(),
         keras.layers.Dense(1024, activation='relu'),
@@ -104,9 +104,9 @@ def getConvModelBigKernel():
 
 def getConvModelValidPadding():
     model = keras.models.Sequential([
-        keras.layers.Conv2D(32, (14, 14), padding="same", input_shape=([28, 28, 1])),
+        keras.layers.Conv2D(32, (5, 5), padding="same", input_shape=([28, 28, 1])),
         keras.layers.MaxPool2D((2, 2)),
-        keras.layers.Conv2D(64, (2, 2), padding="same"),
+        keras.layers.Conv2D(64, (5, 5), padding="same"),
         keras.layers.MaxPool2D((2, 2)),
         keras.layers.Flatten(),
         keras.layers.Dense(1024, activation='relu'),
