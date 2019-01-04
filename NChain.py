@@ -9,7 +9,7 @@ class Nchain:
 
     @staticmethod
     def get_action_space():
-        return 1, 3
+        return 3
 
     def __init__(self):
         self.length = random.randrange(1, 10)

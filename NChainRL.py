@@ -14,9 +14,16 @@ def get_model():
     model.compile(loss='mse', optimizer='adam')
     return model
 
-def get_random_action(action_space):
-    space = np.random.rand(action_space)
-    return np.eye(action_space)[space]
+
+def get_one_hot(targets, nb_classes):
+    res = np.eye(nb_classes)[np.array(targets).reshape(-1)]
+    return res.reshape(list(targets.shape)+[nb_classes])
+
+
+def get_random_action(action_space: int):
+    space = np.zeros(action_space)
+    space[rand.randint(0, len(space)-1)] = 1
+    return space
 
 def create_training_data():
     memory = []
@@ -28,16 +35,13 @@ def create_training_data():
         totalScore = 0
         while not done:
             state = env.get_state()
-            action = random.randrange(0, 3)
+            action = get_random_action(env.get_action_space())
             reward, done = env.make_move(action)
             totalScore += reward
             nextState = env.get_state()
-            previous_observations.append(state, action)
-        memory.append(previous_observations, totalScore)
+            previous_observations.append(state, action, reward)
+        memory.append(previous_observations)
     return memory
-
-
-
 
 model = get_model()
 
