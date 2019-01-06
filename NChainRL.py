@@ -32,17 +32,19 @@ def create_training_data():
         previous_observations = []
         env = nc.Nchain()
         done = False
-        totalScore = 0
+        total_score = 0
         while not done:
             state = env.get_state()
             action = get_random_action(env.get_action_space())
             reward, done = env.make_move(action)
-            totalScore += reward
-            nextState = env.get_state()
-            previous_observations.append(state, action, reward)
-        memory.append(previous_observations)
-    return memory
+            total_score += reward
+            previous_observations.append((state, action))
+        memory.append((previous_observations, total_score))
+    memory.sort(key=lambda mem: mem[1])
+    return memory[-10000:]
 
 model = get_model()
 
-data = np.array([[1, 2, 3]])
+data = create_training_data()[0]
+train_data = data[0]
+train_labels = data[1]
