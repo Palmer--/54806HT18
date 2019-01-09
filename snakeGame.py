@@ -1,6 +1,5 @@
 #SNAKES GAME
 #SOURCE: https://gist.github.com/sanchitgangwar/2158089
-import pygame as pg
 import numpy as np
 import os
 from random import randint
@@ -20,16 +19,6 @@ class SnakeGame:
     score = 0.0
     previous_input = np.array([0, 0, 0, 0])
 
-    #Draw stuff
-    draw_resolution = 20
-    screen_dim = (world_dimensions[0]*draw_resolution,
-                  world_dimensions[1]*draw_resolution)
-    snake_color = pg.Color("green")
-    food_color = pg.Color("red")
-    os.environ['SDL_VIDEO_CENTERED'] = '1'
-    pg.init()
-    screen = pg.display.set_mode(screen_dim)
-
     def snake_head(self):
         return self.snake[0]
 
@@ -41,14 +30,6 @@ class SnakeGame:
         for food_bit in self.food:
             state[food_bit] = Food_Val
         return state
-
-    def draw_state(self):
-        surface = pg.Surface(self.screen_dim)
-        for x in self.snake:
-            surface = pg.Surface(self.draw_resolution)
-            surface.fill(self.snake_color)
-            pg.draw.rect(surface, pg.Color.)
-        self.screen.
 
     def step(self, action: np.ndarray):
         if len(action) is not len(Movement_Map):
