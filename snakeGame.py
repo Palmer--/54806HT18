@@ -11,16 +11,20 @@ Snake_Head_Val = 1
 Snake_Body_Val = 2
 Food_Val = 3
 Reward_EatFood = 1.0
-Reward_Move = -0.01
+Reward_Move = 0
 Reward_Lose = -10.0
+
+
 
 class SnakeGame:
     _init_snake = [(4, 4), (4, 5), (4, 6)]
     world_dimensions = (10, 10)
-    snake = None # Initial snake co-ordinates
+    snake = None
     food = None
     score = 0.0
     _seed = None
+    previous_action = None
+    renderer = None
 
     @property
     def action_space(self):
@@ -47,6 +51,7 @@ class SnakeGame:
         self.snake = self._init_snake.copy()
         self.place_food()
         self.score = 0.0
+        self.previous_action = None
         return self.get_state()
 
     @property
@@ -55,6 +60,14 @@ class SnakeGame:
 
     def seed(self, value):
         self._seed = value
+
+    @property
+    def valid_actions(self):
+        valid_actions = [x for x in range(len(Movement_Map))]
+        if self.previous_action is None:
+            return valid_actions
+        valid_actions.remove((self.previous_action+2) % 4)
+        return valid_actions
 
     def get_state(self):
         state = np.zeros(self.world_dimensions)
@@ -65,36 +78,50 @@ class SnakeGame:
             state[food_bit] = Food_Val
         return state
 
+    def _get_next_snake_head(self, action: int, current_head):
+        if action == 0:
+            return current_head[0], current_head[1]-1
+        if action == 1:
+            return current_head[0]+1, current_head[1]
+        if action == 2:
+            return current_head[0], current_head[1]+1
+        if action == 3:
+            return current_head[0]-1, current_head[1]
+
+        raise ValueError("Unkown action: {}", action)
+
+    def render(self, mode='human', close=False):
+        import pygameDrawTest as drawer
+        if(self.renderer is None):
+            self.renderer = drawer.SnakeGameDrawer(self)
+        self.renderer.draw_state(self)
+
     def step(self, action: int):
-        if len(action) is not len(Movement_Map):
-            raise ValueError("parameter action must have a length of {} but got a length of {}", len(action), len(Movement_Map))
-        # Calculates the new coordinates of the head of the snake. NOTE: len(snake) increases.
-        # This is taken care of later at [1].
+
         action_reward = Reward_Move
         done = False
-        self.snake.insert(0, (self.snake[0][0] + (action[2] and 1) + (action[0] and -1),
-                              self.snake[0][1] + (action[3] and -1) + (action[1] and 1)))
+        if action not in self.valid_actions:
+            return self.get_state(), action_reward, done, dict()
+        next_head = self._get_next_snake_head(action, self.snake_head)
 
         # Exit if snake crosses the boundaries
-        if self.snake[0][0] < 0 or self.snake[0][0] >= self.world_dimensions[0] \
-                or self.snake[0][1] < 0 or self.snake[0][1] >= self.world_dimensions[1]:
-            action_reward = Reward_Lose
-            done = True
+        if next_head[0] < 0 or next_head[0] >= self.world_dimensions[0] \
+                or next_head[1] < 0 or next_head[1] >= self.world_dimensions[1]:
+            return self.get_state(), Reward_Lose, True, dict()
 
         # If snake runs over itself
-        if self.snake[0] in self.snake[1:]:
-            action_reward = Reward_Lose
-            done = True
+        if next_head in self.snake[1:]:
+            return self.get_state(), Reward_Lose, True, dict()
 
         # When snake eats the food
-        if self.snake[0] in self.food:
+        if next_head in self.food:
             action_reward = Reward_EatFood
-            self.score += 1
             self.place_food()
         else:
             self.snake.pop()  # [1] If it does not eat the food, length decreases
-
-        return self.get_state(), action_reward, done, None
+        self.snake.insert(0, next_head)
+        self.previous_action = action
+        return self.get_state(), action_reward, done, dict()
 
     def place_food(self):
         self.food = None

@@ -5,8 +5,6 @@ import snakeGame as sg
 import os
 
 class SnakeGameDrawer():
-# Initialize the game engine
-    pg.init()
     screen = None
 
     def __init__(self, game: sg.SnakeGame):
@@ -19,7 +17,6 @@ class SnakeGameDrawer():
         os.environ['SDL_VIDEO_CENTERED'] = '1'
         pg.init()
         self.screen = pg.display.set_mode(screen_dim)
-
     # Define the colors we will use in RGB format
     BLACK = (0, 0, 0)
     GREEN = (0, 255, 0)
@@ -27,36 +24,27 @@ class SnakeGameDrawer():
     WHITE = (255, 255, 255)
     DRAW_RESOLUTION = 20
 
-    # Set the height and width of the screen
-    size = [400, 300]
     @staticmethod
     def to_draw_rect(location, resolution):
         return [location[0]*resolution, location[1]*resolution, resolution, resolution]
 
-    def play(self):
-        # Loop until the user clicks the close button.
-        done = False
-        clock = pg.time.Clock()
+    def draw_state(self, game: sg.SnakeGame):
+        pg.time.delay(50)
 
-        while not done:
+        for event in pg.event.get():  # User did something
+            pass
 
-            # This limits the while loop # of updates per sec.
-            clock.tick(3)
-            self.screen.fill(self.WHITE)
-
-
-    def draw_state(self, game : sg.SnakeGame):
         self.screen.fill(self.WHITE)
-        head_rect = self.to_draw_rect(game.snake_head(), self.DRAW_RESOLUTION)
+        head_rect = self.to_draw_rect(game.snake_head, self.DRAW_RESOLUTION)
         pg.draw.rect(self.screen, self.BLACK, head_rect)
+
         for bit in game.food:
             rect = self.to_draw_rect(bit, self.DRAW_RESOLUTION)
             pg.draw.rect(self.screen, self.RED, rect)
 
-        for part in game.snake:
+        for part in game.snake_body:
             part_rect = self.to_draw_rect(part, self.DRAW_RESOLUTION)
-            pg.draw.rect(self.screen, self.RED, part_rect)
-            pg.display.flip()
+            pg.draw.rect(self.screen, self.GREEN, part_rect)
+        pg.display.flip()
 
-        # Be IDLE friendly
-        pg.quit()
+
