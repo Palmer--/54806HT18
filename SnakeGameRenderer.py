@@ -12,8 +12,8 @@ class SnakeGameDrawer():
         pg.display.set_caption("ML Snake")
         # Draw stuff
 
-        screen_dim = (game.world_dimensions[0] * self.DRAW_RESOLUTION,
-                      game.world_dimensions[1] * self.DRAW_RESOLUTION)
+        screen_dim = (game.world_size * self.DRAW_RESOLUTION,
+                      game.world_size * self.DRAW_RESOLUTION)
         os.environ['SDL_VIDEO_CENTERED'] = '1'
         pg.init()
         self.screen = pg.display.set_mode(screen_dim)
@@ -37,8 +37,8 @@ class SnakeGameDrawer():
         self.screen.fill(self.WHITE)
         border_rect = [self.DRAW_RESOLUTION,
                        self.DRAW_RESOLUTION,
-                       sg.SnakeGame.world_dimensions[0]*self.DRAW_RESOLUTION-self.DRAW_RESOLUTION*2,
-                       sg.SnakeGame.world_dimensions[1]*self.DRAW_RESOLUTION-self.DRAW_RESOLUTION*2]
+                       game.world_size * self.DRAW_RESOLUTION - self.DRAW_RESOLUTION * 2,
+                       game.world_size * self.DRAW_RESOLUTION - self.DRAW_RESOLUTION * 2]
         pg.draw.rect(self.screen, self.RED, border_rect, 2)
 
         head_rect = self.to_draw_rect(game.snake_head, self.DRAW_RESOLUTION)
