@@ -12,7 +12,8 @@ Snake_Body_Val = 2
 Food_Val = 3
 Reward_EatFood = 1.0
 Reward_Move = 0
-Reward_Lose = -10.0
+Reward_No_Move = -0.01
+Reward_Lose = -1.0
 
 
 
@@ -25,6 +26,8 @@ class SnakeGame:
     _seed = None
     previous_action = None
     renderer = None
+    step_limit = 200
+    steps = 0
 
     @property
     def action_space(self):
@@ -52,11 +55,13 @@ class SnakeGame:
         self.place_food()
         self.score = 0.0
         self.previous_action = None
+        self.steps = 0
+
         return self.get_state()
 
     @property
     def observation_space(self):
-        return gym.spaces.Box(0, 1, self.world_dimensions, 'float32')
+        return gym.spaces.Box(0, 3, self.world_dimensions, 'float32')
 
     def seed(self, value):
         self._seed = value
@@ -72,11 +77,29 @@ class SnakeGame:
     def get_state(self):
         state = np.zeros(self.world_dimensions)
         state[self.snake_head] = Snake_Head_Val
-        for part in self.snake[1:]:
+        for part in self.snake_body:
             state[part] = Snake_Body_Val
         for food_bit in self.food:
             state[food_bit] = Food_Val
         return state
+
+    def get_snake_head_state(self):
+        state = np.zeros(self.world_dimensions)
+        state[self.snake_head] = 1
+        return state
+
+    def get_snake_body_state(self):
+        state = np.zeros(self.world_dimensions)
+        for part in self.snake_body:
+            state[part] = 1
+        return state
+
+    def get_food_state(self):
+        state = np.zeros(self.world_dimensions)
+        for bit in self.food:
+            state[bit] = 1
+        return state
+
 
     def _get_next_snake_head(self, action: int, current_head):
         if action == 0:
@@ -97,11 +120,13 @@ class SnakeGame:
         self.renderer.draw_state(self)
 
     def step(self, action: int):
-
-        action_reward = Reward_Move
+        self.steps += 1
         done = False
+        if self.step_limit <= self.steps:
+            done = True
+        action_reward = Reward_Move
         if action not in self.valid_actions:
-            return self.get_state(), action_reward, done, dict()
+            return self.get_state(), Reward_No_Move, done, dict()
         next_head = self._get_next_snake_head(action, self.snake_head)
 
         # Exit if snake crosses the boundaries
@@ -118,7 +143,7 @@ class SnakeGame:
             action_reward = Reward_EatFood
             self.place_food()
         else:
-            self.snake.pop()  # [1] If it does not eat the food, length decreases
+            self.snake.pop()  #If it does not eat the food, length decreases
         self.snake.insert(0, next_head)
         self.previous_action = action
         return self.get_state(), action_reward, done, dict()
