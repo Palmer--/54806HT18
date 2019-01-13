@@ -20,14 +20,17 @@ Reward_Lose = -1.0
 class SnakeGame:
     _init_snake = [(4, 4), (4, 5), (4, 6)]
     world_dimensions = (10, 10)
-    snake = None
-    food = None
+    snake = _init_snake.copy()
+    food = []
     score = 0.0
     _seed = None
     previous_action = None
     renderer = None
     step_limit = 200
     steps = 0
+
+    def __init__(self):
+        pass
 
     @property
     def action_space(self):
@@ -61,7 +64,7 @@ class SnakeGame:
 
     @property
     def observation_space(self):
-        return gym.spaces.Box(0, 3, self.world_dimensions, 'float32')
+        return gym.spaces.Box(0, 1, np.shape(self.get_state()), 'float32')
 
     def seed(self, value):
         self._seed = value
@@ -75,6 +78,7 @@ class SnakeGame:
         return valid_actions
 
     def get_state(self):
+        return self.get_snake_head_state(), self.get_snake_body_state(), self.get_food_state()
         state = np.zeros(self.world_dimensions)
         state[self.snake_head] = Snake_Head_Val
         for part in self.snake_body:

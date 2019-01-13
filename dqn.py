@@ -98,8 +98,7 @@ class DQNAgent(AbstractDQNAgent):
             `naive`: Q(s,a;theta) = V(s;theta) + A(s,a;theta)
 
     """
-    def __init__(self, model, policy=None, test_policy=None, enable_double_dqn=False, enable_dueling_network=False,
-                 dueling_type='avg', *args, **kwargs):
+    def __init__(self, model, policy=None, test_policy=None, *args, **kwargs):
         super(DQNAgent, self).__init__(*args, **kwargs)
 
         # Validate (important) input.
@@ -107,36 +106,6 @@ class DQNAgent(AbstractDQNAgent):
             raise ValueError('Model "{}" has more than one output. DQN expects a model that has a single output.'.format(model))
         if model.output._keras_shape != (None, self.nb_actions):
             raise ValueError('Model output "{}" has invalid shape. DQN expects a model that has one dimension for each action, in this case {}.'.format(model.output, self.nb_actions))
-
-        # Parameters.
-        self.enable_double_dqn = enable_double_dqn
-        self.enable_dueling_network = enable_dueling_network
-        self.dueling_type = dueling_type
-        if self.enable_dueling_network:
-            # get the second last layer of the model, abandon the last layer
-            layer = model.layers[-2]
-            nb_action = model.output._keras_shape[-1]
-            # layer y has a shape (nb_action+1,)
-            # y[:,0] represents V(s;theta)
-            # y[:,1:] represents A(s,a;theta)
-            y = Dense(nb_action + 1, activation='linear')(layer.output)
-            # caculate the Q(s,a;theta)
-            # dueling_type == 'avg'
-            # Q(s,a;theta) = V(s;theta) + (A(s,a;theta)-Avg_a(A(s,a;theta)))
-            # dueling_type == 'max'
-            # Q(s,a;theta) = V(s;theta) + (A(s,a;theta)-max_a(A(s,a;theta)))
-            # dueling_type == 'naive'
-            # Q(s,a;theta) = V(s;theta) + A(s,a;theta)
-            if self.dueling_type == 'avg':
-                outputlayer = Lambda(lambda a: K.expand_dims(a[:, 0], -1) + a[:, 1:] - K.mean(a[:, 1:], axis=1, keepdims=True), output_shape=(nb_action,))(y)
-            elif self.dueling_type == 'max':
-                outputlayer = Lambda(lambda a: K.expand_dims(a[:, 0], -1) + a[:, 1:] - K.max(a[:, 1:], axis=1, keepdims=True), output_shape=(nb_action,))(y)
-            elif self.dueling_type == 'naive':
-                outputlayer = Lambda(lambda a: K.expand_dims(a[:, 0], -1) + a[:, 1:], output_shape=(nb_action,))(y)
-            else:
-                assert False, "dueling_type must be one of {'avg','max','naive'}"
-
-            model = Model(inputs=model.input, outputs=outputlayer)
 
         # Related objects.
         self.model = model
@@ -152,9 +121,6 @@ class DQNAgent(AbstractDQNAgent):
 
     def get_config(self):
         config = super(DQNAgent, self).get_config()
-        config['enable_double_dqn'] = self.enable_double_dqn
-        config['dueling_type'] = self.dueling_type
-        config['enable_dueling_network'] = self.enable_dueling_network
         config['model'] = get_object_config(self.model)
         config['policy'] = get_object_config(self.policy)
         config['test_policy'] = get_object_config(self.test_policy)
@@ -274,28 +240,9 @@ class DQNAgent(AbstractDQNAgent):
             assert terminal1_batch.shape == reward_batch.shape
             assert len(action_batch) == len(reward_batch)
 
-            # Compute Q values for mini-batch update.
-            if self.enable_double_dqn:
-                # According to the paper "Deep Reinforcement Learning with Double Q-learning"
-                # (van Hasselt et al., 2015), in Double DQN, the online network predicts the actions
-                # while the target network is used to estimate the Q value.
-                q_values = self.model.predict_on_batch(state1_batch)
-                assert q_values.shape == (self.batch_size, self.nb_actions)
-                actions = np.argmax(q_values, axis=1)
-                assert actions.shape == (self.batch_size,)
-
-                # Now, estimate Q values using the target network but select the values with the
-                # highest Q value wrt to the online model (as computed above).
-                target_q_values = self.target_model.predict_on_batch(state1_batch)
-                assert target_q_values.shape == (self.batch_size, self.nb_actions)
-                q_batch = target_q_values[range(self.batch_size), actions]
-            else:
-                # Compute the q_values given state1, and extract the maximum for each sample in the batch.
-                # We perform this prediction on the target_model instead of the model for reasons
-                # outlined in Mnih (2015). In short: it makes the algorithm more stable.
-                target_q_values = self.target_model.predict_on_batch(state1_batch)
-                assert target_q_values.shape == (self.batch_size, self.nb_actions)
-                q_batch = np.max(target_q_values, axis=1).flatten()
+            target_q_values = self.target_model.predict_on_batch(state1_batch)
+            assert target_q_values.shape == (self.batch_size, self.nb_actions)
+            q_batch = np.max(target_q_values, axis=1).flatten()
             assert q_batch.shape == (self.batch_size,)
 
             targets = np.zeros((self.batch_size, self.nb_actions))
@@ -365,188 +312,3 @@ class DQNAgent(AbstractDQNAgent):
     def test_policy(self, policy):
         self.__test_policy = policy
         self.__test_policy._set_agent(self)
-
-
-class NAFLayer(Layer):
-    """Write me
-    """
-    def __init__(self, nb_actions, mode='full', **kwargs):
-        if mode not in ('full', 'diag'):
-            raise RuntimeError('Unknown mode "{}" in NAFLayer.'.format(self.mode))
-
-        self.nb_actions = nb_actions
-        self.mode = mode
-        super(NAFLayer, self).__init__(**kwargs)
-
-    def call(self, x, mask=None):
-        # TODO: validate input shape
-
-        assert (len(x) == 3)
-        L_flat = x[0]
-        mu = x[1]
-        a = x[2]
-
-        if self.mode == 'full':
-            # Create L and L^T matrix, which we use to construct the positive-definite matrix P.
-            L = None
-            LT = None
-            if K.backend() == 'theano':
-                import theano.tensor as T
-                import theano
-
-                def fn(x, L_acc, LT_acc):
-                    x_ = K.zeros((self.nb_actions, self.nb_actions))
-                    x_ = T.set_subtensor(x_[np.tril_indices(self.nb_actions)], x)
-                    diag = K.exp(T.diag(x_)) + K.epsilon()
-                    x_ = T.set_subtensor(x_[np.diag_indices(self.nb_actions)], diag)
-                    return x_, x_.T
-
-                outputs_info = [
-                    K.zeros((self.nb_actions, self.nb_actions)),
-                    K.zeros((self.nb_actions, self.nb_actions)),
-                ]
-                results, _ = theano.scan(fn=fn, sequences=L_flat, outputs_info=outputs_info)
-                L, LT = results
-            elif K.backend() == 'tensorflow':
-                import tensorflow as tf
-
-                # Number of elements in a triangular matrix.
-                nb_elems = (self.nb_actions * self.nb_actions + self.nb_actions) // 2
-
-                # Create mask for the diagonal elements in L_flat. This is used to exponentiate
-                # only the diagonal elements, which is done before gathering.
-                diag_indeces = [0]
-                for row in range(1, self.nb_actions):
-                    diag_indeces.append(diag_indeces[-1] + (row + 1))
-                diag_mask = np.zeros(1 + nb_elems)  # +1 for the leading zero
-                diag_mask[np.array(diag_indeces) + 1] = 1
-                diag_mask = K.variable(diag_mask)
-
-                # Add leading zero element to each element in the L_flat. We use this zero
-                # element when gathering L_flat into a lower triangular matrix L.
-                nb_rows = tf.shape(L_flat)[0]
-                zeros = tf.expand_dims(tf.tile(K.zeros((1,)), [nb_rows]), 1)
-                try:
-                    # Old TF behavior.
-                    L_flat = tf.concat(1, [zeros, L_flat])
-                except (TypeError, ValueError):
-                    # New TF behavior
-                    L_flat = tf.concat([zeros, L_flat], 1)
-
-                # Create mask that can be used to gather elements from L_flat and put them
-                # into a lower triangular matrix.
-                tril_mask = np.zeros((self.nb_actions, self.nb_actions), dtype='int32')
-                tril_mask[np.tril_indices(self.nb_actions)] = range(1, nb_elems + 1)
-
-                # Finally, process each element of the batch.
-                init = [
-                    K.zeros((self.nb_actions, self.nb_actions)),
-                    K.zeros((self.nb_actions, self.nb_actions)),
-                ]
-
-                def fn(a, x):
-                    # Exponentiate everything. This is much easier than only exponentiating
-                    # the diagonal elements, and, usually, the action space is relatively low.
-                    x_ = K.exp(x) + K.epsilon()
-                    # Only keep the diagonal elements.
-                    x_ *= diag_mask
-                    # Add the original, non-diagonal elements.
-                    x_ += x * (1. - diag_mask)
-                    # Finally, gather everything into a lower triangular matrix.
-                    L_ = tf.gather(x_, tril_mask)
-                    return [L_, tf.transpose(L_)]
-
-                tmp = tf.scan(fn, L_flat, initializer=init)
-                if isinstance(tmp, (list, tuple)):
-                    # TensorFlow 0.10 now returns a tuple of tensors.
-                    L, LT = tmp
-                else:
-                    # Old TensorFlow < 0.10 returns a shared tensor.
-                    L = tmp[:, 0, :, :]
-                    LT = tmp[:, 1, :, :]
-            else:
-                raise RuntimeError('Unknown Keras backend "{}".'.format(K.backend()))
-            assert L is not None
-            assert LT is not None
-            P = K.batch_dot(L, LT)
-        elif self.mode == 'diag':
-            if K.backend() == 'theano':
-                import theano.tensor as T
-                import theano
-
-                def fn(x, P_acc):
-                    x_ = K.zeros((self.nb_actions, self.nb_actions))
-                    x_ = T.set_subtensor(x_[np.diag_indices(self.nb_actions)], x)
-                    return x_
-
-                outputs_info = [
-                    K.zeros((self.nb_actions, self.nb_actions)),
-                ]
-                P, _ = theano.scan(fn=fn, sequences=L_flat, outputs_info=outputs_info)
-            elif K.backend() == 'tensorflow':
-                import tensorflow as tf
-
-                # Create mask that can be used to gather elements from L_flat and put them
-                # into a diagonal matrix.
-                diag_mask = np.zeros((self.nb_actions, self.nb_actions), dtype='int32')
-                diag_mask[np.diag_indices(self.nb_actions)] = range(1, self.nb_actions + 1)
-
-                # Add leading zero element to each element in the L_flat. We use this zero
-                # element when gathering L_flat into a lower triangular matrix L.
-                nb_rows = tf.shape(L_flat)[0]
-                zeros = tf.expand_dims(tf.tile(K.zeros((1,)), [nb_rows]), 1)
-                try:
-                    # Old TF behavior.
-                    L_flat = tf.concat(1, [zeros, L_flat])
-                except (TypeError, ValueError):
-                    # New TF behavior
-                    L_flat = tf.concat([zeros, L_flat], 1)
-
-                # Finally, process each element of the batch.
-                def fn(a, x):
-                    x_ = tf.gather(x, diag_mask)
-                    return x_
-
-                P = tf.scan(fn, L_flat, initializer=K.zeros((self.nb_actions, self.nb_actions)))
-            else:
-                raise RuntimeError('Unknown Keras backend "{}".'.format(K.backend()))
-        assert P is not None
-        assert K.ndim(P) == 3
-
-        # Combine a, mu and P into a scalar (over the batches). What we compute here is
-        # -.5 * (a - mu)^T * P * (a - mu), where * denotes the dot-product. Unfortunately
-        # TensorFlow handles vector * P slightly suboptimal, hence we convert the vectors to
-        # 1xd/dx1 matrices and finally flatten the resulting 1x1 matrix into a scalar. All
-        # operations happen over the batch size, which is dimension 0.
-        prod = K.batch_dot(K.expand_dims(a - mu, 1), P)
-        prod = K.batch_dot(prod, K.expand_dims(a - mu, -1))
-        A = -.5 * K.batch_flatten(prod)
-        assert K.ndim(A) == 2
-        return A
-
-    def get_output_shape_for(self, input_shape):
-        return self.compute_output_shape(input_shape)
-
-    def compute_output_shape(self, input_shape):
-        if len(input_shape) != 3:
-            raise RuntimeError("Expects 3 inputs: L, mu, a")
-        for i, shape in enumerate(input_shape):
-            if len(shape) != 2:
-                raise RuntimeError("Input {} has {} dimensions but should have 2".format(i, len(shape)))
-        assert self.mode in ('full','diag')
-        if self.mode == 'full':
-            expected_elements = (self.nb_actions * self.nb_actions + self.nb_actions) // 2
-        elif self.mode == 'diag':
-            expected_elements = self.nb_actions
-        else:
-            expected_elements = None
-        assert expected_elements is not None
-        if input_shape[0][1] != expected_elements:
-            raise RuntimeError("Input 0 (L) should have {} elements but has {}".format(input_shape[0][1]))
-        if input_shape[1][1] != self.nb_actions:
-            raise RuntimeError(
-                "Input 1 (mu) should have {} elements but has {}".format(self.nb_actions, input_shape[1][1]))
-        if input_shape[2][1] != self.nb_actions:
-            raise RuntimeError(
-                "Input 2 (action) should have {} elements but has {}".format(self.nb_actions, input_shape[1][1]))
-        return input_shape[0][0], 1

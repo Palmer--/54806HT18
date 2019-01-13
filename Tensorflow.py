@@ -6,7 +6,7 @@ from keras.layers import Dense, Activation, Flatten
 from keras.optimizers import Adam
 
 from dqn import DQNAgent
-from policy import BoltzmannQPolicy
+from policy import *
 from memory import SequentialMemory
 import snakeGame as sg
 
@@ -30,13 +30,11 @@ model.add(Dense(nb_actions))
 model.add(Activation('linear'))
 print(model.summary())
 
-# Finally, we configure and compile our agent. You can use every built-in Keras optimizer and
-# even the metrics!
 memory = SequentialMemory(limit=50000, window_length=1)
-policy = BoltzmannQPolicy()
+policy = EpsGreedyQPolicy()
 dqn = DQNAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=20,
                target_model_update=1e-2, policy=policy)
-dqn.compile(Adam(lr=1e-3), metrics=['mae'])
+dqn.compile(Adam(lr=1e-1), metrics=['mae'])
 
 dqn.fit(env, nb_steps=50000, visualize=True, verbose=2)
 
