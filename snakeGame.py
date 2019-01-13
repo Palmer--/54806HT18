@@ -14,10 +14,10 @@ Food_Val = 3
 
 Reward_EatFood = 1.0  # Given when the snake successfully eats food
 Reward_Move = 0.0  # Default movement reward
-Reward_Invalid_Move = -1.0  # Given when an invalid move is made
-Reward_Lose = -1.0  # Given when the snake runs into itself or a wall
+Reward_Invalid_Move = 0.0  # Given when an invalid move is made
+Reward_Lose = 0.0  # Given when the snake runs into itself or a wall
 Reward_Correct_Direction = 0.02  # Given when the snake moves closer to food
-Reward_Wrong_Direction = - 0.01 #Given when the snake moves away from food
+Reward_Wrong_Direction = 0.00 #Given when the snake moves away from food
 world_size = 12  # This will allow for (n-2)^2 gamespace since the edges are considered game over
 _init_snake = [(6, 6), (5, 6), (4, 6)]
 
