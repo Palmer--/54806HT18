@@ -35,6 +35,12 @@ class SnakeGameDrawer():
             pass
 
         self.screen.fill(self.WHITE)
+        border_rect = [self.DRAW_RESOLUTION,
+                       self.DRAW_RESOLUTION,
+                       sg.SnakeGame.world_dimensions[0]*self.DRAW_RESOLUTION-self.DRAW_RESOLUTION*2,
+                       sg.SnakeGame.world_dimensions[1]*self.DRAW_RESOLUTION-self.DRAW_RESOLUTION*2]
+        pg.draw.rect(self.screen, self.RED, border_rect, 2)
+
         head_rect = self.to_draw_rect(game.snake_head, self.DRAW_RESOLUTION)
         pg.draw.rect(self.screen, self.BLACK, head_rect)
 
