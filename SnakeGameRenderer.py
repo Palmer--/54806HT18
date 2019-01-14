@@ -22,7 +22,7 @@ class SnakeGameDrawer():
     GREEN = (0, 255, 0)
     RED = (255, 0, 0)
     WHITE = (255, 255, 255)
-    DRAW_RESOLUTION = 20
+    DRAW_RESOLUTION = 30
 
     @staticmethod
     def to_draw_rect(location, resolution):

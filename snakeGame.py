@@ -8,29 +8,27 @@ import gym.spaces
 
 Movement_Map = ["Up", "Right", "Down", "Left"]
 # Values used in the simple model
-Snake_Head_Val = 1
-Snake_Body_Val = 2
-Food_Val = 3
+Snake_Body_Val = 0.33
+Snake_Head_Val = 0.66
+Food_Val = 1
 
 Reward_EatFood = 1.0  # Given when the snake successfully eats food
-Reward_Move = 0.0  # Default movement reward
-Reward_Invalid_Move = 0.0  # Given when an invalid move is made
-Reward_Lose = 0.0  # Given when the snake runs into itself or a wall
-Reward_Correct_Direction = 0.02  # Given when the snake moves closer to food
-Reward_Wrong_Direction = 0.00 #Given when the snake moves away from food
+Reward_Invalid_Move = 0  # Given when an invalid move is made
+Reward_Lose = 0  # Given when the snake runs into itself or a wall
+Reward_Correct_Direction = 0.1  # Given when the snake moves closer to food
+Reward_Wrong_Direction = 0.0 #Given when the snake moves away from food
 world_size = 12  # This will allow for (n-2)^2 gamespace since the edges are considered game over
-_init_snake = [(6, 6), (5, 6), (4, 6)]
+step_limit = 200
 
 
 class SnakeGame:
-    step_limit = 200
 
     def __init__(self):
         self.food = []
         self.steps = 0
         self.previous_action = 0
         self.world_size = world_size
-        self.snake = _init_snake.copy()
+        self.snake = []
         self.renderer = None
         self._seed = None
         self.score = 0.0
@@ -57,16 +55,17 @@ class SnakeGame:
         random.seed(self._seed)
 
     def reset(self):
-        self.snake = _init_snake.copy()
+        snake_start = randint(2, self.world_size - 3), randint(2, self.world_size - 3)
+        self.snake = [snake_start] * 3
         self.place_food()
         self.score = 0.0
-        self.previous_action = 0
+        self.previous_action = None
         self.steps = 0
         return self.get_state()
 
     @property
     def observation_space(self):
-        return gym.spaces.Box(0, 1, (3, self.world_size, self.world_size), 'float32')
+        return gym.spaces.Box(0, 1, (self.world_size, self.world_size), 'float32')
 
     def seed(self, value):
         self._seed = value
@@ -74,7 +73,8 @@ class SnakeGame:
     @property
     def valid_actions(self):
         valid_actions = [x for x in range(len(Movement_Map))]
-        valid_actions.remove((self.previous_action+2) % 4)
+        if self.previous_action is not None:
+            valid_actions.remove((self.previous_action+2) % 4)
         # Do not allow the snake leave bounds
         if self.snake_head[0] == 0:
             valid_actions.remove(3)
@@ -87,6 +87,9 @@ class SnakeGame:
         return valid_actions
 
     def get_state(self):
+        return self.get_simple_state()
+
+    def get_complex_state(self):
         state = np.zeros((3, 12, 12))
         state[0] = self.get_snake_head_state()
         state[1] = self.get_snake_body_state()
@@ -94,12 +97,12 @@ class SnakeGame:
         return state
 
     def get_simple_state(self):
-        state = np.zeros(self.world_size)
-        state[self.snake_head] = Snake_Head_Val
+        state = np.zeros((self.world_size, self.world_size))
         for part in self.snake_body:
             state[part] = Snake_Body_Val
         for bit in self.food:
             state[bit] = Food_Val
+        state[self.snake_head] = Snake_Head_Val
         return state
 
     def get_snake_head_state(self):
@@ -140,7 +143,7 @@ class SnakeGame:
     def step(self, action: int):
         self.steps += 1
         done = False
-        if self.step_limit <= self.steps:
+        if step_limit <= self.steps:
             done = True
 
         # Snake head can not go back to the same location is just came from
@@ -148,17 +151,19 @@ class SnakeGame:
             return self.get_state(), Reward_Invalid_Move, done, dict()
         next_head = self._get_next_snake_head(action, self.snake_head)
 
-        self.snake.insert(0, next_head)
-        self.previous_action = action
-
         # Exit if snake reaches edge
         if next_head[0] < 1 or next_head[0]+1 >= self.world_size \
                 or next_head[1] < 1 or next_head[1]+1 >= self.world_size:
-            return self.get_state(), Reward_Lose, True, dict()
+            return self.get_state(), Reward_Lose, done, dict()
 
         # If snake runs over itself
-        if self.snake_head in self.snake[1:]:
-            return self.get_state(), Reward_Lose, True, dict()
+        if next_head in self.snake:
+            return self.get_state(), Reward_Lose, done, dict()
+
+        # We have made a valid move and can update the snake position
+        prev_head = self.snake_head
+        self.snake.insert(0, next_head)
+        self.previous_action = action
 
         # When snake eats the food
         if next_head in self.food:
@@ -166,7 +171,6 @@ class SnakeGame:
             return self.get_state(), Reward_EatFood, done, dict()
         else:
             self.snake.pop()  # If it does not eat the food, length decreases
-            prev_head = self.snake_body[0]
             prev_dist = self.dist(self.food[0], prev_head)
             new_dist = self.dist(self.food[0], next_head)
             if new_dist < prev_dist:
