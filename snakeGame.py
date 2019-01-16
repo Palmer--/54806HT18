@@ -7,6 +7,7 @@ from random import randint
 import gym.spaces
 
 Movement_Map = ["Up", "Right", "Down", "Left"]
+Input_Map = ["Left", "Straight", "Right"]
 # Values used in the simple model
 Snake_Body_Val = 0.33
 Snake_Head_Val = 0.66
@@ -14,8 +15,8 @@ Food_Val = 1
 
 Reward_EatFood = 1.0  # Given when the snake successfully eats food
 Reward_Invalid_Move = 0  # Given when an invalid move is made
-Reward_Lose = 0  # Given when the snake runs into itself or a wall
-Reward_Correct_Direction = 0.1  # Given when the snake moves closer to food
+Reward_Lose = -1.0  # Given when the snake runs into itself or a wall
+Reward_Correct_Direction = 0.0  # Given when the snake moves closer to food
 Reward_Wrong_Direction = 0.0 #Given when the snake moves away from food
 world_size = 12  # This will allow for (n-2)^2 gamespace since the edges are considered game over
 step_limit = 200
@@ -26,16 +27,17 @@ class SnakeGame:
     def __init__(self):
         self.food = []
         self.steps = 0
-        self.previous_action = 0
+        self.previous_action = 1
         self.world_size = world_size
         self.snake = []
         self.renderer = None
         self._seed = None
         self.score = 0.0
+        self.rotation = 0
 
     @property
     def action_space(self):
-        return gym.spaces.Discrete(4)
+        return gym.spaces.Discrete(3)
 
     @property
     def snake_head(self):
@@ -55,17 +57,18 @@ class SnakeGame:
         random.seed(self._seed)
 
     def reset(self):
-        snake_start = randint(2, self.world_size - 3), randint(2, self.world_size - 3)
+        snake_start = self.get_random_cordinates()
         self.snake = [snake_start] * 3
         self.place_food()
         self.score = 0.0
-        self.previous_action = None
+        self.previous_action = 2
         self.steps = 0
+        self.rotation = 0
         return self.get_state()
 
     @property
     def observation_space(self):
-        return gym.spaces.Box(0, 1, (self.world_size, self.world_size), 'float32')
+        return gym.spaces.Box(0, 1, (3, self.world_size, self.world_size), 'float32')
 
     def seed(self, value):
         self._seed = value
@@ -87,13 +90,13 @@ class SnakeGame:
         return valid_actions
 
     def get_state(self):
-        return self.get_simple_state()
+        return self.get_complex_state()
 
     def get_complex_state(self):
-        state = np.zeros((3, 12, 12))
-        state[0] = self.get_snake_head_state()
-        state[1] = self.get_snake_body_state()
-        state[2] = self.get_food_state()
+        state = np.zeros((3, self.world_size, self.world_size))
+        state[0] = np.rot90(self.get_snake_head_state(), self.rotation)
+        state[1] = np.rot90(self.get_snake_body_state(), self.rotation)
+        state[2] = np.rot90(self.get_food_state(), self.rotation)
         return state
 
     def get_simple_state(self):
@@ -103,7 +106,7 @@ class SnakeGame:
         for bit in self.food:
             state[bit] = Food_Val
         state[self.snake_head] = Snake_Head_Val
-        return state
+        return np.rot90(state, self.rotation)
 
     def get_snake_head_state(self):
         state = np.zeros((self.world_size, self.world_size))
@@ -122,7 +125,8 @@ class SnakeGame:
             state[bit] = 1
         return state
 
-    def _get_next_snake_head(self, action: int, current_head):
+    @staticmethod
+    def _get_next_snake_head(action: int, current_head):
         if action == 0:
             return current_head[0], current_head[1]-1
         if action == 1:
@@ -135,35 +139,37 @@ class SnakeGame:
         raise ValueError("Unkown action: {}", action)
 
     def render(self, mode='human', close=False):
-        import SnakeGameRenderer as drawer
+        import SnakeGameRenderer as sgr
         if self.renderer is None:
-            self.renderer = drawer.SnakeGameDrawer(self)
+            self.renderer = sgr.SnakeGameDrawer(self)
         self.renderer.draw_state(self)
 
-    def step(self, action: int):
+    def step(self, raw_action: int):
         self.steps += 1
         done = False
         if step_limit <= self.steps:
             done = True
+        action = (raw_action + 1 + self.rotation) % 4
 
         # Snake head can not go back to the same location is just came from
         if action not in self.valid_actions:
-            return self.get_state(), Reward_Invalid_Move, done, dict()
+            raise ValueError("Snake can not go that way")
         next_head = self._get_next_snake_head(action, self.snake_head)
-
-        # Exit if snake reaches edge
-        if next_head[0] < 1 or next_head[0]+1 >= self.world_size \
-                or next_head[1] < 1 or next_head[1]+1 >= self.world_size:
-            return self.get_state(), Reward_Lose, done, dict()
-
-        # If snake runs over itself
-        if next_head in self.snake:
-            return self.get_state(), Reward_Lose, done, dict()
 
         # We have made a valid move and can update the snake position
         prev_head = self.snake_head
         self.snake.insert(0, next_head)
         self.previous_action = action
+        self.rotation += raw_action - 1
+
+        # Exit if snake reaches edge
+        if next_head[0] < 1 or next_head[0]+1 >= self.world_size \
+                or next_head[1] < 1 or next_head[1]+1 >= self.world_size:
+            return self.get_state(), Reward_Lose, True, dict()
+
+        # If snake runs over itself
+        if next_head in self.snake_body:
+            return self.get_state(), Reward_Lose, True, dict()
 
         # When snake eats the food
         if next_head in self.food:
@@ -182,11 +188,13 @@ class SnakeGame:
     def dist(x, y):
         return np.sqrt((x[0] - y[0]) ** 2 + (x[1] - y[1]) ** 2)
 
+    def get_random_cordinates(self):
+        return randint(1, self.world_size - 2), randint(1, self.world_size - 2)
+
     def place_food(self):
         self.food = None
         while True:
-            maybe_food = (randint(1, self.world_size - 2),
-                          randint(1, self.world_size - 2))  # Calculating next food's coordinates
+            maybe_food = self.get_random_cordinates()  # Calculating next food's coordinates
             if maybe_food not in self.snake:
                 self.food = [maybe_food]
                 break
