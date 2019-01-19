@@ -9,16 +9,17 @@ import gym.spaces
 Movement_Map = ["Up", "Right", "Down", "Left"]
 Input_Map = ["Left", "Straight", "Right"]
 # Values used in the simple model
-Snake_Body_Val = 0.33
-Snake_Head_Val = 0.66
-Food_Val = 1
+Snake_Body_Val = 1 / 4 * -2
+Snake_Head_Val = 1/4 * 1
+Wall_Val = 1/4 * -4
+Food_Val = 1/4 * 4
 
 Reward_EatFood = 1.0  # Given when the snake successfully eats food
 Reward_Invalid_Move = 0  # Given when an invalid move is made
 Reward_Lose = -1.0  # Given when the snake runs into itself or a wall
-Reward_Correct_Direction = 0.0  # Given when the snake moves closer to food
-Reward_Wrong_Direction = 0.0 #Given when the snake moves away from food
-world_size = 12  # This will allow for (n-2)^2 gamespace since the edges are considered game over
+Reward_Correct_Direction = 0.1  # Given when the snake moves closer to food
+Reward_Wrong_Direction = 0.1 #Given when the snake moves away from food
+world_size = 7  # This will allow for (n-2)^2 gamespace since the edges are considered game over
 step_limit = 200
 
 
@@ -68,7 +69,7 @@ class SnakeGame:
 
     @property
     def observation_space(self):
-        return gym.spaces.Box(0, 1, (3, self.world_size, self.world_size), 'float32')
+        return gym.spaces.Box(0, 2, (3, self.world_size, self.world_size), 'float32')
 
     def seed(self, value):
         self._seed = value
