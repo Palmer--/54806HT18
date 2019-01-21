@@ -29,7 +29,7 @@ class SnakeGameDrawer():
         return [location[0]*resolution, location[1]*resolution, resolution, resolution]
 
     def draw_state(self, game: sg.SnakeGame):
-        pg.time.delay(30)
+        pg.time.delay(150)
 
         for event in pg.event.get():  # User did something
             pass
