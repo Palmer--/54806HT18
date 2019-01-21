@@ -36,7 +36,7 @@ policy = BoltzmannQPolicy()
 dqn = DQNAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=100,
                target_model_update=1e-2, policy=policy)
 dqn.compile(Adam(lr=1e-3), metrics=['mae'])
-dqn.load_weights('E:\\git\\TensorFlow\\dqn_Snake_weights_2.h5f')
+dqn.load_weights('E:\\git\\TensorFlow\\dqn_Snake_weights_2_weights.h5f')
 #dqn.fit(env, nb_steps=500000, visualize=visualize_training, verbose=2, callbacks=[tbCallBack])
 # After training is done save the final weights.
 #dqn.save_weights('dqn_{}_weights.h5f'.format("Snake_weights_2"), overwrite=True)
