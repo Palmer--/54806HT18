@@ -16,9 +16,10 @@ Food_Val = 1/4 * 4
 
 Reward_EatFood = 1.0  # Given when the snake successfully eats food
 Reward_Invalid_Move = 0  # Given when an invalid move is made
-Reward_Lose = -1.0  # Given when the snake runs into itself or a wall
-Reward_Correct_Direction = 0.1  # Given when the snake moves closer to food
-Reward_Wrong_Direction = 0.1 #Given when the snake moves away from food
+Reward_Lose = -10.0  # Given when the snake runs into itself or a wall
+Reward_Correct_Direction = 0.0  # Given when the snake moves closer to food
+Reward_Wrong_Direction = 0.0 #Given when the snake moves away from food
+
 world_size = 7  # This will allow for (n-2)^2 gamespace since the edges are considered game over
 step_limit = 100  # max number of steps per epoc
 
