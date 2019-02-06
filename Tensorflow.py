@@ -19,24 +19,24 @@ tbCallBack = keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0, wr
 env = sg.SnakeGame()
 np.random.seed(123)
 env.seed(123)
-visualize_training = False
+visualize_training = True
 nb_actions = env.action_space.n
 
 # build model.
 model = Sequential()
-model.add(Flatten(input_shape=(2,) + env.observation_space.shape))
+model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
 model.add(Dense(432, activation='relu'))
 model.add(Dense(216, activation='relu'))
 model.add(Dense(144, activation='linear'))
 model.add(Dense(nb_actions))
 print(model.summary())
 
-memory = SequentialMemory(limit=500000, window_length=2)
+memory = SequentialMemory(limit=500000, window_length=1)
 policy = BoltzmannQPolicy()
 dqn = DQNAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=100,
                target_model_update=1e-2, policy=policy)
-dqn.compile(Adam(lr=1e-3), metrics=['mae'])
-dqn.load_weights('E:\\git\\TensorFlow\\dqn_Snake_weights_2_weights.h5f')
+dqn.compile(Adam(lr=1e-2),  metrics=['mae'])
+#dqn.load_weights('E:\\git\\TensorFlow\\dqn_Snake_weights_2_weights.h5f')
 dqn.fit(env, nb_steps=500000, visualize=visualize_training, verbose=2, callbacks=[tbCallBack])
 # After training is done save the final weights.
 dqn.save_weights('dqn_{}_weights.h5f'.format("Snake"), overwrite=True)

@@ -41,16 +41,16 @@ class SnakeGameDrawer():
                        game.world_size * self.DRAW_RESOLUTION - self.DRAW_RESOLUTION * 2]
         pg.draw.rect(self.screen, self.RED, border_rect, 2)
 
-        head_rect = self.to_draw_rect(game.snake_head, self.DRAW_RESOLUTION)
-        pg.draw.rect(self.screen, self.BLACK, head_rect)
+        state = game.get_state()
+        xshape = np.shape(state)[0]
+        yshape = np.shape(state)[1]
+        for y in range(yshape):
+            for x in range(xshape):
+                rect = self.to_draw_rect((x, y), self.DRAW_RESOLUTION)
+                val = int(state[x, y] + 1) * 127
+                color = pg.Color(val, val, val)
+                pg.draw.rect(self.screen, color, rect)
 
-        for bit in game.food:
-            rect = self.to_draw_rect(bit, self.DRAW_RESOLUTION)
-            pg.draw.rect(self.screen, self.RED, rect)
-
-        for part in game.snake_body:
-            part_rect = self.to_draw_rect(part, self.DRAW_RESOLUTION)
-            pg.draw.rect(self.screen, self.GREEN, part_rect)
         pg.display.flip()
 
 
