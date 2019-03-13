@@ -41,7 +41,7 @@ class SnakeGameDrawer():
                        game.world_size * self.DRAW_RESOLUTION - self.DRAW_RESOLUTION * 2]
         pg.draw.rect(self.screen, self.RED, border_rect, 2)
 
-        state = game.get_state()
+        state = game.get_simple_state()
         xshape = np.shape(state)[0]
         yshape = np.shape(state)[1]
         for y in range(yshape):
