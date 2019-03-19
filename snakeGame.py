@@ -20,7 +20,6 @@ Reward_Lose = -10.0  # Given when the snake runs into itself or a wall
 Reward_Correct_Direction = 0.0  # Given when the snake moves closer to food
 Reward_Wrong_Direction = 0.0 #Given when the snake moves away from food
 
-world_size = 7  # This will allow for (n-2)^2 gamespace since the edges are considered game over
 view_dim = 6
 step_limit = 100  # max number of steps per epoc
 
@@ -31,7 +30,8 @@ class SnakeGame:
         self.food = []
         self.steps = 0
         self.previous_action = 1
-        self.world_size = world_size
+        self.world_size = 7
+
         self.snake = []
         self.renderer = None
         self._seed = None
@@ -67,6 +67,7 @@ class SnakeGame:
         self.previous_action = 2
         self.steps = 0
         self.rotation = 0
+        self.world = np.zeros((self.world_size, self.world_size))
         return self.get_state()
 
     @property
@@ -93,25 +94,27 @@ class SnakeGame:
         return valid_actions
 
     def get_state(self):
-        return self.get_simple_state()
-
-    def get_complex_state(self):
-        state = np.zeros((3, self.world_size, self.world_size))
-        state[0] = np.rot90(self.get_snake_head_state(), self.rotation)
-        state[1] = np.rot90(self.get_snake_body_state(), self.rotation)
-        state[2] = np.rot90(self.get_food_state(), self.rotation)
-        return state
+        return self.get_network_state()
 
     @staticmethod
     def is_in_view(delta):
         if (delta[0] < 0
-            or delta[0] >= view_dim
-            or delta[1] < 0
-            or delta[1] >= view_dim):
+        or delta[0] >= view_dim
+        or delta[1] < 0
+        or delta[1] >= view_dim):
             return False
         return True
 
-    def get_simple_state(self):
+    def get_draw_state(self):
+        state = np.zeros((self.world_size, self.world_size))
+        state[self.snake_head] = Snake_Head_Val
+        for part in self.snake_body:
+            state[part] = Snake_Body_Val
+        for bit in self.food:
+            state[bit] = Food_Val
+        return state
+
+    def get_network_state(self):
         state = np.zeros((view_dim, view_dim))
         xs_wall = self.snake_head[0] - view_dim
         ys_wall = self.snake_head[1] - view_dim
@@ -138,8 +141,6 @@ class SnakeGame:
                 state[delta] = Snake_Body_Val
 
         return state
-
-        return np.rot90(state, self.rotation)
 
     def get_snake_head_state(self):
         state = np.zeros((self.world_size, self.world_size))
@@ -222,7 +223,7 @@ class SnakeGame:
         return np.sqrt((x[0] - y[0]) ** 2 + (x[1] - y[1]) ** 2)
 
     def get_random_cordinates(self):
-        return randint(2, self.world_size - 3), randint(2, self.world_size - 3)
+        return randint(1, self.world_size - 2), randint(1, self.world_size - 2)
 
     def place_food(self):
         self.food = None
