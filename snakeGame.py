@@ -1,5 +1,4 @@
 #SNAKES GAME
-#SOURCE: https://gist.github.com/sanchitgangwar/2158089
 import numpy as np
 import os
 import random
@@ -67,7 +66,6 @@ class SnakeGame:
         self.previous_action = 2
         self.steps = 0
         self.rotation = 0
-        self.world = np.zeros((self.world_size, self.world_size))
         return self.get_state()
 
     @property
